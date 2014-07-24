@@ -1,0 +1,102 @@
+---
+# tasks file for tessera
+- name: Add node repository
+  sudo: True
+  apt_repository: repo='ppa:chris-lea/node.js' update_cache=yes state=present
+
+- name: Update apt and install dependencies
+  sudo: True
+  apt: pkg={{item}} state=present
+  with_items:
+    - python-software-properties
+    - python-pip
+    - python-dev
+    - wget
+    - ca-certificates
+    - nodejs
+    - git
+    - nginx
+
+- name: Install grunt-cli
+  command: npm install -g grunt-cli
+  sudo: True
+
+- name: Create Tessera directory
+  sudo: True
+  file: path={{tessera_dir}} state=directory owner={{ansible_ssh_user}} group={{ansible_ssh_user}}
+
+- name: Clone Tessera repository
+  git: repo=git://github.com/urbanairship/tessera.git
+       dest={{tessera_dir}}
+
+- name: Modify Tessera configuration
+  lineinfile: dest={{tessera_dir}}/tessera/config.py regexp="^SECRET_KEY" line="SECRET_KEY                 = '{{tessera_secret_key}}'" state=present
+
+- name: Modify Tessera configuration
+  lineinfile: dest={{tessera_dir}}/tessera/config.py regexp="^DEFAULT_FROM_TIME" line="DEFAULT_FROM_TIME          = '{{tessera_default_from_time}}'" state=present
+
+- name: Modify Tessera configuration
+  lineinfile: dest={{tessera_dir}}/tessera/config.py regexp="^DEFAULT_THEME" line="DEFAULT_THEME              = '{{tessera_default_theme}}'" state=present
+
+- name: Modify Tessera configuration
+  lineinfile: dest={{tessera_dir}}/tessera/config.py regexp="^GRAPHITE_URL" line="GRAPHITE_URL               = '{{tessera_graphite_url}}'" state=present
+
+- name: Install python dependencies
+  sudo: True
+  shell: chdir={{tessera_dir}} pip install -r {{item}}
+  with_items:
+    - requirements.txt
+    - dev-requirements.txt
+
+- name: NPM install dependencies
+  shell: chdir={{tessera_dir}} npm install
+
+- name: Run Grunt
+  shell: chdir={{tessera_dir}} grunt
+
+- name: Invoke initdb
+  shell: chdir={{tessera_dir}} invoke initdb
+
+- name: Import json DB
+  shell: chdir={{tessera_dir}} invoke json.import 'demo/*'
+
+- name: Install gunicorn
+  sudo: True
+  pip: name=gunicorn
+
+- name: Create nginx log directories
+  sudo: True
+  file: path=/var/log/nginx/log state=directory owner=root
+  tags: nginx
+
+- name: Touch Tessera log files
+  sudo: True
+  file: path={{item}} state=touch owner=root
+  with_items:
+    - /var/log/nginx/log/tessera.access.log
+    - /var/log/nginx/log/tessera.error.log
+  tags: nginx
+
+- name : Copy nginx config for tessera
+  sudo: True
+  template: src=tessera.conf.j2 dest=/etc/nginx/sites-available/tessera.conf owner=root
+  tags: nginx
+
+- name: Delete default conf
+  sudo: True
+  file: path={{item}} state=absent
+  with_items:
+    - /etc/nginx/sites-available/default
+    - /etc/nginx/sites-enabled/default
+  tags: nginx
+
+- name: Symlink tessera.conf
+  sudo: True
+  file: path=/etc/nginx/sites-enabled/tessera.conf src=/etc/nginx/sites-available/tessera.conf state=link owner=root
+  notify: start nginx server
+  tags: nginx
+
+- name: Copy gunicorn upstart script
+  sudo: True
+  template: src=tessera-upstart.conf.j2 dest=/etc/init/gunicorn.conf owner=root
+  notify: start gunicorn server

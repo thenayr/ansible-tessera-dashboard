@@ -1,0 +1,7 @@
+---
+# defaults file for tessera
+tessera_dir: /opt/tessera
+tessera_secret_key: "new" 
+tessera_default_from_time: '-1h'
+tessera_default_theme: 'dark'
+tessera_graphite_url: 'http://localhost:8080'

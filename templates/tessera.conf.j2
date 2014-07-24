@@ -1,0 +1,14 @@
+upstream tessera {
+  server 127.0.0.1:5000;
+}
+
+server {
+   listen      80;
+   access_log  /var/log/nginx/log/tessera.access.log;
+   error_log   /var/log/nginx/log/tessera.error.log;
+
+    location / {
+      proxy_pass http://tessera;
+    }
+
+}

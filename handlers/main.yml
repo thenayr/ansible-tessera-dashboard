@@ -1,0 +1,14 @@
+---
+#Handlers for Nginx server
+- name: start nginx server
+  sudo: True
+  service: name=nginx state=started
+
+- name: start gunicorn server
+  sudo: True
+  service: name=gunicorn state=started
+
+- name: restart nginx server
+  sudo: True
+  service: name=nginx state=restarted
+# handlers file for tessera
