@@ -5,7 +5,7 @@ Fully sets up instance of the [Tessera dashboard](https://github.com/urbanairshi
 
 This role configures Tessera to run on Gunicorn and is proxied through using Nginx.
 
-![screenshot](docs/screenshots/color-themes-small.png)
+![screenshot](https://raw.githubusercontent.com/urbanairship/tessera/master/docs/screenshots/color-themes-small.png)
 
 Requirements
 ------------
