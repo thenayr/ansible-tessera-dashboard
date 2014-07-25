@@ -5,8 +5,8 @@ stop on runlevel [016]
 
 respawn
 console log
-setuid nobody
-setgid nogroup
+setuid {{ansible_ssh_user}}
+setgid {{ansible_ssh_user}}
 chdir {{tessera_dir}}
 
 exec gunicorn -b 127.0.0.1:5000 tessera:app
